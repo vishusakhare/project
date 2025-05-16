@@ -63,3 +63,9 @@ df = pd.DataFrame({"Product Name":product_name,"Price":Prices,"Description":Desc
 df.to_csv("flipkart_data.csv", mode='a', index=True, header=False)
 
 
+
+#append the obj to the product list
+  product_list.append(object)
+product_list[0]
+
+
