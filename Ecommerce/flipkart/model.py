@@ -141,137 +141,52 @@ def generation(vstore):
     YOUR ANSWER:
 
     """
-    qa_prompt = ChatPromptTemplate.from_messages(
+    qa_prompt= ChatPromptTemplate.from_messages(
     [
-        ("system", PRODUCT_BOT_TEMPLATE),
+        ("system",PRODUCT_BOT_TEMPLATE),
         MessagesPlaceholder(variable_name="chat_history"),
-        ("human", "{input}")
-    ]
+        ("human","{input}") ]
 )
-    question_answer_chain = create_stuff_documents_chain(model, qa_prompt)
-    rag_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)
 
-    conversational_rag_chain = RunnableWithMessageHistory(
-    rag_chain,
+
+question_answer_chain= create_stuff_documents_chain(model,qa_prompt)
+
+
+
+chain= create_retrieval_chain(history_aware_retriever,question_answer_chain)
+
+chat_history=[]
+
+
+from langchain_community.chat_message_histories import ChatMessageHistory
+from langchain_core.chat_history import BaseChatMessageHistory
+from langchain_core.runnables.history import RunnableWithMessageHistory
+
+store = {}
+
+
+def get_session_history(session_id: str) -> BaseChatMessageHistory:
+    if session_id not in store:
+        store[session_id]=ChatMessageHistory()
+    return store[session_id]
+
+
+chain_with_memory= RunnableWithMessageHistory(
+    chain,
     get_session_history,
     input_messages_key="input",
     history_messages_key="chat_history",
     output_messages_key="answer",
 )
-    return conversational_rag_chain
 
 
 
-if __name__ == "__main__":
-   vstore = data_ingestion("done")
-   conversational_rag_chain = generation(vstore)
-   answer= conversational_rag_chain.invoke(
-    {"input": "can you tell me the best bluetooth buds?"},
-    config={
-        "configurable": {"session_id": "dhruv"}
-    },  # constructs a key "abc123" in store.
-)["answer"]
-   print(answer)
-   answer1= conversational_rag_chain.invoke(
-    {"input": "what is my previous question?"},
-    config={
-        "configurable": {"session_id": "dhruv"}
-    },  # constructs a key "abc123" in store.
-)["answer"]
-   print(answer1)
-
-#app.py
-from flask import Flask, render_template, request
-from flipkart.retrieval_generation import generation
-from flipkart.data_ingestion import data_ingestion
-
-
-vstore = data_ingestion("done")
-chain = generation(vstore)
-
-
-app = Flask(__name__)
-
-@app.route("/")
-def index():
-    return render_template("index.html")
-
-
-
-@app.route("/get", methods = ["POST", "GET"])
-def chat():
-   
-   if request.method == "POST":
-      msg = request.form["msg"]
-      input = msg
-
-      result = chain.invoke(
-         {"input": input},
-    config={
-        "configurable": {"session_id": "dhruv"}
+chain_with_memory.invoke(
+    {"input": "Can you tell me the best bluetooth buds"},
+    config = { 
+        "configurable": {"session_id": "vishu"}  # ✅ fixed key
     },
 )["answer"]
 
-      return str(result)
 
-if __name__ == '__main__':
-    
-    app.run(host="0.0.0.0", port=5000, debug= True)
-
-#setup.py
-from setuptools import find_packages, setup
-from typing import List
-
-
-def get_requirements() ->List[str]:
-
-    """
-    This function will return list of requirements
-    """
-    requirement_list:List[str] = []
-
-    """
-    Write a code to read requirements.txt file and append each requirements in requirement_list variable.
-    """
-    return requirement_list
-
-setup(
-    name = "flipkart",
-    version= "0.0.1",
-    author="Dhruv-Saxena",
-    author_email="dhruvsaxena.uk@gmail.com",
-    packages=find_packages(),
-    install_requires=get_requirements()
-)
-
-#template.py
-import os 
-from pathlib import Path
-
-project_name = "flipkart"
-
-list_of_files = [
-
-    f"{project_name}/__init__.py",
-    f"{project_name}/data_converter.py",
-    f"{project_name}/data_ingestion.py",
-    f"{project_name}/retrieval_generation.py",
-    "static/style.css",
-    "templates/chat.html",
-    "setup.py",
-    "app.py",
-    "requirements.txt",
-    ".env"
-]
-
-
-for filepath in list_of_files:
-    filepath = Path(filepath)
-    filedir, filename = os.path.split(filepath)
-
-    if filedir !="":
-        os.makedirs(filedir, exist_ok=True)
-    
-    if (not os.path.exists(filepath)) or (os.path.getsize(filepath) ==0):
-        with open(filepath, "w") as f:
-            pass
+store
